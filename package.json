@@ -1,0 +1,26 @@
+{
+  "name": "confa2026-poll",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Опрос для региональной конференции (Next.js)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "setup:directus": "node scripts/create-votes-collection.mjs",
+    "setup:directus:settings": "node scripts/create-settings-collection.mjs",
+    "setup:directus:settings:fields": "node scripts/add-settings-fields-gdf-sv.mjs"
+  },
+  "dependencies": {
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.0.0"
+  }
+}
