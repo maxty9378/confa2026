@@ -249,11 +249,17 @@ export default function DashboardPage() {
       es.onmessage = (e) => {
         lastMessageAt = Date.now();
         try {
-          const data = JSON.parse(e.data) as Stats & { heartbeat?: boolean };
+          const data = JSON.parse(e.data) as Stats & { heartbeat?: boolean; _error?: boolean };
           if (data.heartbeat) return;
+          if (data._error) {
+            toast.error('Нет связи с сервером', {
+              description: 'Нажмите кнопку обновления',
+              duration: 8000,
+            });
+          }
           const newStats = data as Stats;
           const prev = prevTotalVotesRef.current;
-          if (prev !== null && newStats.totalVotes > prev) {
+          if (!data._error && prev !== null && newStats.totalVotes > prev) {
             toast.dismiss();
             toast.success('Получен новый ответ', {
               description: `Всего ответов: ${newStats.totalVotes}`,

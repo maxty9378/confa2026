@@ -26,7 +26,15 @@ export async function POST(request: Request) {
 
     const stats = await addVote(role as Role, num);
     return NextResponse.json({ ok: true, stats });
-  } catch {
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '';
+    const isNetwork = msg === 'CONNECT_TIMEOUT' || /fetch|network|failed/i.test(msg);
+    if (isNetwork) {
+      return NextResponse.json(
+        { error: 'Ошибка сети, попробуйте ещё раз' },
+        { status: 503 }
+      );
+    }
     return NextResponse.json({ error: 'Ошибка запроса' }, { status: 400 });
   }
 }

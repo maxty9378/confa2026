@@ -1,9 +1,19 @@
 import { subscribe, getStatsSnapshot } from '@/lib/store';
+import type { Stats } from '@/lib/store-types';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const HEARTBEAT_INTERVAL_MS = 15000;
+
+const emptyStats: Stats = {
+  averageAll: null,
+  averageGdf: null,
+  averageSv: null,
+  totalVotes: 0,
+  countGdf: 0,
+  countSv: 0,
+};
 
 export async function GET() {
   const encoder = new TextEncoder();
@@ -11,15 +21,25 @@ export async function GET() {
   let heartbeatId: ReturnType<typeof setInterval> | null = null;
   const stream = new ReadableStream({
     start(controller) {
-      getStatsSnapshot().then((stats) => {
-        try {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(stats)}\n\n`)
-          );
-        } catch {
-          // client closed
-        }
-      });
+      getStatsSnapshot()
+        .then((stats) => {
+          try {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify(stats)}\n\n`)
+            );
+          } catch {
+            // client closed
+          }
+        })
+        .catch(() => {
+          try {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ ...emptyStats, _error: true })}\n\n`)
+            );
+          } catch {
+            // client closed
+          }
+        });
       unsubscribe = subscribe((stats) => {
         try {
           controller.enqueue(

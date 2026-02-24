@@ -47,14 +47,17 @@ export default function PollPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setMessage({ text: data.error || 'Ошибка отправки', error: true });
+        setMessage({
+          text: data.error || (res.status === 503 ? 'Ошибка сети, попробуйте ещё раз' : 'Ошибка отправки'),
+          error: true,
+        });
         setLoading(false);
         return;
       }
       setStep('done');
       setMessage({ text: 'Спасибо! Ваш ответ учтён.\nВнимание на экран 👀' });
     } catch {
-      setMessage({ text: 'Нет связи с сервером', error: true });
+      setMessage({ text: 'Ошибка сети, попробуйте ещё раз', error: true });
     }
     setLoading(false);
   };
