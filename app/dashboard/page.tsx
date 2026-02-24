@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -13,11 +13,8 @@ interface Stats {
   countSv: number;
 }
 
-function fmt(v: number | null): string {
-  return v != null ? `${Math.round(v)}%` : '—';
-}
-
 const SCALE = [100, 75, 50, 25, 0];
+const BAR_ANIM_MS = 320;
 
 function ChartSection({
   title,
@@ -46,8 +43,7 @@ function ChartSection({
   const prevPollRef = useRef(pPoll);
   const prevTestRef = useRef(pTest);
   const prevShowTestRef = useRef(showTest);
-  const deltaValue =
-    pTest > pPoll ? pTest - pPoll : pTest < pPoll ? pPoll - pTest : 0;
+  const deltaValue = pTest > pPoll ? pTest - pPoll : pTest < pPoll ? pPoll - pTest : 0;
   const [displayDelta, setDisplayDelta] = useState(deltaValue);
   const [pulseDelta, setPulseDelta] = useState(false);
   const prevDeltaRef = useRef(deltaValue);
@@ -87,7 +83,7 @@ function ChartSection({
       const rafId = requestAnimationFrame(() => {
         requestAnimationFrame(() => setDisplayTest(pTest));
       });
-      const duration = 600;
+      const duration = BAR_ANIM_MS;
       const startTime = performance.now();
       const tick = (now: number) => {
         const t = Math.min((now - startTime) / duration, 1);
@@ -109,7 +105,7 @@ function ChartSection({
     prevPollRef.current = pPoll;
     if (start === pPoll) return;
     setPulsePoll(true);
-    const duration = 600;
+    const duration = BAR_ANIM_MS;
     const startTime = performance.now();
     const tick = (now: number) => {
       const t = Math.min((now - startTime) / duration, 1);
@@ -127,7 +123,7 @@ function ChartSection({
     prevTestRef.current = pTest;
     if (start === pTest) return;
     setPulseTest(true);
-    const duration = 600;
+    const duration = BAR_ANIM_MS;
     const startTime = performance.now();
     const tick = (now: number) => {
       const t = Math.min((now - startTime) / duration, 1);
@@ -145,7 +141,7 @@ function ChartSection({
     prevDeltaRef.current = deltaValue;
     if (start === deltaValue) return;
     setPulseDelta(true);
-    const duration = 600;
+    const duration = BAR_ANIM_MS;
     const startTime = performance.now();
     const tick = (now: number) => {
       const t = Math.min((now - startTime) / duration, 1);
@@ -174,16 +170,10 @@ function ChartSection({
         <div className={styles.barsArea}>
           <div className={styles.barGroup}>
             <div className={styles.barWrapper}>
-              <span
-                className={`${styles.barValue} ${pulsePoll ? styles.barValuePulse : ''}`}
-                data-variant="poll"
-              >
+              <span className={`${styles.barValue} ${pulsePoll ? styles.barValuePulse : ''}`} data-variant="poll">
                 {Math.round(displayPollLabel)}%
               </span>
-              <div
-                className={styles.barFillPoll}
-                style={{ height: `${displayPoll}%` }}
-              />
+              <div className={styles.barFillPoll} style={{ height: `${displayPoll}%` }} />
             </div>
             <span className={styles.barCaption}>{pollLabel}</span>
           </div>
@@ -197,22 +187,16 @@ function ChartSection({
                   {pTest > pPoll
                     ? `LFL +${Math.round(displayDelta)}%`
                     : pTest < pPoll
-                      ? `LFL −${Math.round(displayDelta)}%`
+                      ? `LFL -${Math.round(displayDelta)}%`
                       : 'Без изменений'}
                 </span>
               </div>
               <div className={styles.barGroup}>
                 <div className={styles.barWrapper}>
-                  <span
-                    className={`${styles.barValue} ${pulseTest ? styles.barValuePulse : ''}`}
-                    data-variant="test"
-                  >
+                  <span className={`${styles.barValue} ${pulseTest ? styles.barValuePulse : ''}`} data-variant="test">
                     {Math.round(displayTestLabel)}%
                   </span>
-                  <div
-                    className={styles.barFillTest}
-                    style={{ height: `${displayTest}%` }}
-                  />
+                  <div className={styles.barFillTest} style={{ height: `${displayTest}%` }} />
                 </div>
                 <span className={styles.barCaption}>{testLabel}</span>
               </div>
@@ -230,6 +214,7 @@ export default function DashboardPage() {
   const [courseTestSv, setCourseTestSv] = useState<number | null>(null);
   const [showTests, setShowTests] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [streamStatus, setStreamStatus] = useState<'connecting' | 'live' | 'reconnecting'>('connecting');
   const prevTotalVotesRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -237,16 +222,19 @@ export default function DashboardPage() {
     let reconnectTimeoutId: ReturnType<typeof setTimeout>;
     let staleCheckIntervalId: ReturnType<typeof setInterval>;
     const STALE_MS = 25000;
-    const RECONNECT_DELAY_MS = 3000;
+    const RECONNECT_DELAY_MS = 2000;
     let lastMessageAt = 0;
 
     const connect = () => {
+      setStreamStatus('connecting');
       lastMessageAt = Date.now();
       es = new EventSource('/api/stats/stream');
       es.onopen = () => {
+        setStreamStatus('live');
         lastMessageAt = Date.now();
       };
       es.onmessage = (e) => {
+        setStreamStatus('live');
         lastMessageAt = Date.now();
         try {
           const data = JSON.parse(e.data) as Stats & { heartbeat?: boolean; _error?: boolean };
@@ -263,7 +251,7 @@ export default function DashboardPage() {
             toast.dismiss();
             toast.success('Получен новый ответ', {
               description: `Всего ответов: ${newStats.totalVotes}`,
-              duration: 6000,
+              duration: 4000,
             });
           }
           prevTotalVotesRef.current = newStats.totalVotes;
@@ -273,6 +261,7 @@ export default function DashboardPage() {
         }
       };
       es.onerror = () => {
+        setStreamStatus('reconnecting');
         es?.close();
         es = null;
         if (staleCheckIntervalId) clearInterval(staleCheckIntervalId);
@@ -283,6 +272,7 @@ export default function DashboardPage() {
           if (staleCheckIntervalId) clearInterval(staleCheckIntervalId);
           es?.close();
           es = null;
+          setStreamStatus('reconnecting');
           reconnectTimeoutId = setTimeout(connect, RECONNECT_DELAY_MS);
         }
       }, 5000);
@@ -318,7 +308,7 @@ export default function DashboardPage() {
   if (!stats) {
     return (
       <main className={styles.main}>
-        <p className={styles.loading}>Загрузка…</p>
+        <p className={styles.loading}>Загрузка...</p>
       </main>
     );
   }
@@ -326,43 +316,60 @@ export default function DashboardPage() {
   return (
     <main className={styles.main}>
       <header className={styles.header}>
-        <h1 className={styles.question}>
-          Насколько вы владеете стандартами СПП?
-        </h1>
-        <div className={styles.toggleWrap}>
-          <button
-            type="button"
-            className={styles.refreshBtn}
-            onClick={() => setRefreshKey((k) => k + 1)}
-            title="Обновить данные"
-            aria-label="Обновить данные"
-          >
-            <svg
-              className={styles.refreshIcon}
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        <div className={styles.titleWrap}>
+          <p className={styles.kicker}>LIVE DASHBOARD</p>
+          <h1 className={styles.question}>Насколько вы владеете стандартами СПП?</h1>
+        </div>
+
+        <div className={styles.sidePanel}>
+          <div className={styles.metricRow}>
+            <div className={styles.metricCard}>
+              <span className={styles.metricLabel}>Ответов</span>
+              <strong className={styles.metricValue}>{stats.totalVotes}</strong>
+            </div>
+            <div className={styles.metricCard}>
+              <span className={styles.metricLabel}>Поток</span>
+              <strong className={`${styles.metricValue} ${streamStatus === 'live' ? styles.liveOk : styles.liveWait}`}>
+                {streamStatus === 'live' ? 'LIVE' : streamStatus === 'connecting' ? 'WAIT' : 'RETRY'}
+              </strong>
+            </div>
+          </div>
+
+          <div className={styles.toggleWrap}>
+            <button
+              type="button"
+              className={styles.refreshBtn}
+              onClick={() => setRefreshKey((k) => k + 1)}
+              title="Обновить данные"
+              aria-label="Обновить данные"
             >
-              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-              <path d="M3 3v5h5" />
-              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-              <path d="M16 21h5v-5" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={showTests}
-            className={styles.toggle}
-            onClick={() => setShowTests((v) => !v)}
-          >
-            <span className={styles.toggleThumb} />
-          </button>
-          <span className={styles.toggleLabel}>вкл тестирование</span>
+              <svg
+                className={styles.refreshIcon}
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                <path d="M16 21h5v-5" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showTests}
+              className={styles.toggle}
+              onClick={() => setShowTests((v) => !v)}
+            >
+              <span className={styles.toggleThumb} />
+            </button>
+            <span className={styles.toggleLabel}>вкл тестирование</span>
+          </div>
         </div>
       </header>
 
