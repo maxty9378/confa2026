@@ -22,6 +22,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
 
   useEffect(() => {
@@ -86,6 +87,33 @@ export default function AdminPage() {
     setSaving(false);
   };
 
+  const handleResetVotes = async () => {
+    if (!confirm('Удалить все ответы на опрос? Это действие нельзя отменить.')) return;
+    setResetting(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/admin/votes/reset', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ text: data.error || 'Ошибка обнуления', error: true });
+        setResetting(false);
+        return;
+      }
+      setStats({
+        averageAll: null,
+        averageGdf: null,
+        averageSv: null,
+        totalVotes: 0,
+        countGdf: 0,
+        countSv: 0,
+      });
+      setMessage({ text: 'Ответы на опрос обнулены. Дашборд обновлён.' });
+    } catch {
+      setMessage({ text: 'Ошибка сети', error: true });
+    }
+    setResetting(false);
+  };
+
   if (loading) {
     return (
       <main className={styles.main}>
@@ -119,6 +147,19 @@ export default function AdminPage() {
                 <div className={styles.statMeta}>{stats.countSv} ответов</div>
               </div>
             </div>
+          </section>
+        )}
+
+        {stats && stats.totalVotes > 0 && (
+          <section className={styles.resetSection}>
+            <button
+              type="button"
+              className={styles.resetBtn}
+              onClick={handleResetVotes}
+              disabled={resetting}
+            >
+              {resetting ? 'Обнуление…' : 'Обнулить ответы на опрос'}
+            </button>
           </section>
         )}
 

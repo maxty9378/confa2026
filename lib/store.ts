@@ -26,6 +26,14 @@ export async function getStatsSnapshot(): Promise<Stats> {
   return computeStats(votes);
 }
 
+/** Обновить статистику из БД и уведомить подписчиков (дашборд). */
+export async function refreshAndNotify(): Promise<Stats> {
+  const votes = await getVotes();
+  const stats = computeStats(votes);
+  notify(stats);
+  return stats;
+}
+
 export function subscribe(cb: (stats: Stats) => void): () => void {
   subscribers.push(cb);
   return () => {

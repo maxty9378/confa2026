@@ -1,10 +1,10 @@
 :root {
-  --bg: #0f1419;
-  --card: #1a2332;
+  --bg: #0c1015;
+  --card: #161d28;
   --accent: #3b82f6;
-  --text: #e2e8f0;
-  --muted: #94a3b8;
-  --border: #334155;
+  --text: #e8eef4;
+  --muted: #8b9cad;
+  --border: #2d3847;
 }
 
 * {
@@ -14,7 +14,73 @@
 body {
   font-family: var(--font-sans), 'Segoe UI', system-ui, sans-serif;
   background: var(--bg);
+  background-image:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(59, 130, 246, 0.08), transparent),
+    radial-gradient(ellipse 80% 50% at 100% 50%, rgba(34, 197, 94, 0.04), transparent),
+    radial-gradient(ellipse 80% 50% at 0% 50%, rgba(14, 165, 233, 0.04), transparent);
   color: var(--text);
   min-height: 100vh;
   margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Тосты «Получен новый ответ»: левый нижний угол, крупнее, снизу вверх */
+[data-sonner-toaster][data-y-position='bottom'][data-x-position='left'] {
+  bottom: 2rem !important;
+  left: 1.5rem !important;
+  width: auto !important;
+  max-width: 90vw !important;
+}
+
+[data-sonner-toast] {
+  animation: toastFlyUp 6s cubic-bezier(0.21, 0.47, 0.32, 0.99) forwards !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+  border-radius: 14px !important;
+  font-weight: 600 !important;
+  max-width: 360px !important;
+  width: max-content !important;
+  padding: 0.85rem 1.15rem !important;
+  font-size: 1.05rem !important;
+}
+
+[data-sonner-toast] [data-description] {
+  font-size: 0.95rem !important;
+  margin-top: 0.25rem !important;
+}
+
+/* Быстрое исчезновение при замене тоста (dismiss) */
+[data-sonner-toast][data-removed='true'] {
+  animation: toastExitFast 0.4s ease-out forwards !important;
+}
+
+@keyframes toastFlyUp {
+  0% {
+    transform: translateY(120%) scale(0.92);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  18% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+  70% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: translateY(-140px) scale(0.96);
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+
+@keyframes toastExitFast {
+  to {
+    transform: translateY(-80px) scale(0.95);
+    opacity: 0;
+    filter: blur(2px);
+  }
 }

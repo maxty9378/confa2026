@@ -21,6 +21,34 @@
   border-bottom: 1px solid var(--border);
 }
 
+.resetSection {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.resetBtn {
+  padding: 0.6rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.resetBtn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
+.resetBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .statsTitle {
   font-size: 0.95rem;
   font-weight: 600;

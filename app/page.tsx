@@ -52,7 +52,7 @@ export default function PollPage() {
         return;
       }
       setStep('done');
-      setMessage({ text: 'Спасибо! Ваш ответ учтён.' });
+      setMessage({ text: 'Спасибо! Ваш ответ учтён.\nВнимание на экран 👀' });
     } catch {
       setMessage({ text: 'Нет связи с сервером', error: true });
     }
@@ -62,7 +62,11 @@ export default function PollPage() {
   return (
     <main className={styles.main}>
       <div className={styles.card}>
-        <h1 className={styles.title}>Региональная конференция</h1>
+        <h1 className={styles.title}>
+          {step === 'done'
+            ? 'Спасибо! Ваш ответ учтён.'
+            : 'Оцените, насколько вы владеете стандартами СПП?'}
+        </h1>
 
         {step === 'role' && (
           <>
@@ -70,14 +74,14 @@ export default function PollPage() {
             <div className={styles.roles}>
               <button
                 type="button"
-                className={styles.roleBtn}
+                className={`${styles.roleBtn} ${role === 'ГДф' ? styles.roleBtnSelected : ''}`}
                 onClick={() => handleSelectRole('ГДф')}
               >
                 ГДф
               </button>
               <button
                 type="button"
-                className={styles.roleBtn}
+                className={`${styles.roleBtn} ${role === 'СВ' ? styles.roleBtnSelected : ''}`}
                 onClick={() => handleSelectRole('СВ')}
               >
                 СВ
@@ -89,7 +93,7 @@ export default function PollPage() {
         {step === 'question' && role && (
           <form onSubmit={handleSubmit}>
             <p className={styles.label}>
-              Оцените, насколько вы владеете стандартами СПП?
+              Укажите от 10% до 100% — ползунком или числом в поле (например, 55 или 64).
             </p>
             <div className={styles.rangeRow}>
               <input
@@ -117,7 +121,6 @@ export default function PollPage() {
               />
               <span className={styles.percent}>%</span>
             </div>
-            <p className={styles.hint}>От 10% до 100%. Можно ввести число вручную (например 55 или 64).</p>
             <div className={styles.actions}>
               <button
                 type="button"
@@ -134,7 +137,7 @@ export default function PollPage() {
         )}
 
         {step === 'done' && (
-          <p className={styles.thankYou}>{message?.text ?? 'Спасибо!'}</p>
+          <p className={styles.thankYou}>Внимание на экран 👀</p>
         )}
 
         {message && step !== 'done' && (

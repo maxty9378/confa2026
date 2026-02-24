@@ -47,6 +47,31 @@ export async function getVotes(): Promise<{ role: string; value: number }[]> {
   return Array.isArray(list) ? list : [];
 }
 
+/** Удаляет все записи в коллекции votes (обнуление ответов на опрос). */
+export async function deleteAllVotes(): Promise<void> {
+  const resList = await fetch(
+    `${DIRECTUS_URL}/items/${COLLECTION}?fields=id&limit=-1`,
+    { headers: headers() }
+  );
+  if (!resList.ok) {
+    const err = await resList.text();
+    throw new Error(`Directus: ${resList.status} ${err}`);
+  }
+  const data = await resList.json();
+  const list = data?.data ?? data;
+  const ids = Array.isArray(list) ? list.map((r: { id: number }) => r.id) : [];
+  if (ids.length === 0) return;
+  const resDelete = await fetch(`${DIRECTUS_URL}/items/${COLLECTION}`, {
+    method: 'DELETE',
+    headers: headers(),
+    body: JSON.stringify(ids),
+  });
+  if (!resDelete.ok) {
+    const err = await resDelete.text();
+    throw new Error(`Directus: ${resDelete.status} ${err}`);
+  }
+}
+
 // Настройки конференции (результаты тестирования по ГДф и СВ) — одна запись в confa_settings
 const SETTINGS_COLLECTION = 'confa_settings';
 
