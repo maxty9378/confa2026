@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import Image from 'next/image';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import styles from './page.module.css';
@@ -167,7 +168,7 @@ function ChartSection({
           ))}
         </div>
 
-        <div className={styles.barsArea}>
+        <div className={styles.barsArea} data-show-test={showTest ? 'true' : 'false'}>
           <div className={styles.barGroup}>
             <div className={styles.barWrapper}>
               <span className={`${styles.barValue} ${pulsePoll ? styles.barValuePulse : ''}`} data-variant="poll">
@@ -178,30 +179,26 @@ function ChartSection({
             <span className={styles.barCaption}>{pollLabel}</span>
           </div>
 
-          {showTest && (
-            <>
-              <div
-                className={`${styles.deltaWrap} ${pTest > pPoll ? styles.deltaUp : pTest < pPoll ? styles.deltaDown : styles.deltaZero} ${pulseDelta ? styles.deltaPulse : ''}`}
-              >
-                <span className={styles.deltaLabel}>
-                  {pTest > pPoll
-                    ? `LFL +${Math.round(displayDelta)}%`
-                    : pTest < pPoll
-                      ? `LFL -${Math.round(displayDelta)}%`
-                      : 'Без изменений'}
-                </span>
-              </div>
-              <div className={styles.barGroup}>
-                <div className={styles.barWrapper}>
-                  <span className={`${styles.barValue} ${pulseTest ? styles.barValuePulse : ''}`} data-variant="test">
-                    {Math.round(displayTestLabel)}%
-                  </span>
-                  <div className={styles.barFillTest} style={{ height: `${displayTest}%` }} />
-                </div>
-                <span className={styles.barCaption}>{testLabel}</span>
-              </div>
-            </>
-          )}
+          <div
+            className={`${styles.deltaWrap} ${showTest ? styles.deltaVisible : styles.deltaHidden} ${pTest > pPoll ? styles.deltaUp : pTest < pPoll ? styles.deltaDown : styles.deltaZero} ${pulseDelta ? styles.deltaPulse : ''}`}
+          >
+            <span className={styles.deltaLabel}>
+              {pTest > pPoll
+                ? `LFL +${Math.round(displayDelta)}%`
+                : pTest < pPoll
+                  ? `LFL -${Math.round(displayDelta)}%`
+                  : 'Без изменений'}
+            </span>
+          </div>
+          <div className={`${styles.barGroup} ${showTest ? styles.testVisible : styles.testHidden}`}>
+            <div className={styles.barWrapper}>
+              <span className={`${styles.barValue} ${pulseTest ? styles.barValuePulse : ''}`} data-variant="test">
+                {Math.round(displayTestLabel)}%
+              </span>
+              <div className={styles.barFillTest} style={{ height: `${displayTest}%` }} />
+            </div>
+            <span className={styles.barCaption}>{testLabel}</span>
+          </div>
         </div>
       </div>
     </section>
@@ -244,10 +241,11 @@ export default function DashboardPage() {
               description: 'Нажмите кнопку обновления',
               duration: 8000,
             });
+            return;
           }
           const newStats = data as Stats;
           const prev = prevTotalVotesRef.current;
-          if (!data._error && prev !== null && newStats.totalVotes > prev) {
+          if (prev !== null && newStats.totalVotes > prev) {
             toast.dismiss();
             toast.success('Получен новый ответ', {
               description: `Всего ответов: ${newStats.totalVotes}`,
@@ -286,6 +284,43 @@ export default function DashboardPage() {
     };
   }, [refreshKey]);
 
+  useEffect(() => {
+    let stopped = false;
+
+    const syncStats = () => {
+      fetch('/api/stats', { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((fresh: Stats) => {
+          if (stopped) return;
+          const prev = prevTotalVotesRef.current;
+          if (prev !== null && fresh.totalVotes > prev) {
+            toast.dismiss();
+            toast.success('Получен новый ответ', {
+              description: `Всего ответов: ${fresh.totalVotes}`,
+              duration: 4000,
+            });
+          }
+          prevTotalVotesRef.current = fresh.totalVotes;
+          setStats(fresh);
+        })
+        .catch(() => {
+          // ignore: SSE channel will continue trying
+        });
+    };
+
+    syncStats();
+    const id = setInterval(syncStats, 3000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') syncStats();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      stopped = true;
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [refreshKey]);
+
   const fetchSettings = () => {
     fetch('/api/settings')
       .then((r) => r.json())
@@ -317,25 +352,20 @@ export default function DashboardPage() {
     <main className={styles.main}>
       <header className={styles.header}>
         <div className={styles.titleWrap}>
-          <p className={styles.kicker}>LIVE DASHBOARD</p>
-          <h1 className={styles.question}>Насколько вы владеете стандартами СПП?</h1>
+          <div className={styles.brandRow}>
+            <Image src="/logo.png" alt="Логотип" width={248} height={122} className={styles.logo} priority />
+            <h1 className={styles.question}>Насколько вы владеете стандартами СПП?</h1>
+          </div>
         </div>
 
         <div className={styles.sidePanel}>
-          <div className={styles.metricRow}>
-            <div className={styles.metricCard}>
-              <span className={styles.metricLabel}>Ответов</span>
-              <strong className={styles.metricValue}>{stats.totalVotes}</strong>
-            </div>
-            <div className={styles.metricCard}>
-              <span className={styles.metricLabel}>Поток</span>
-              <strong className={`${styles.metricValue} ${streamStatus === 'live' ? styles.liveOk : styles.liveWait}`}>
+          <div className={styles.toggleWrap}>
+            <div className={styles.streamPill}>
+              <span className={styles.streamLabel}>Поток</span>
+              <strong className={`${styles.streamValue} ${streamStatus === 'live' ? styles.liveOk : styles.liveWait}`}>
                 {streamStatus === 'live' ? 'LIVE' : streamStatus === 'connecting' ? 'WAIT' : 'RETRY'}
               </strong>
             </div>
-          </div>
-
-          <div className={styles.toggleWrap}>
             <button
               type="button"
               className={styles.refreshBtn}
@@ -349,14 +379,14 @@ export default function DashboardPage() {
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="2.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-                <path d="M16 21h5v-5" />
+                <path d="M20 5v5h-5" />
+                <path d="M4 19v-5h5" />
+                <path d="M19.2 9a7 7 0 0 0-13.1-2.4L5 7.7" />
+                <path d="M4.8 15a7 7 0 0 0 13.1 2.4l1.1-1.1" />
               </svg>
             </button>
             <button

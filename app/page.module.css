@@ -27,6 +27,26 @@
   gap: 0.75rem;
 }
 
+.brandRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.45rem;
+}
+
+.logo {
+  width: 78px;
+  height: auto;
+  display: block;
+}
+
+.brandCaption {
+  margin: 0 0 0.18rem;
+  font-size: 0.72rem;
+  color: rgba(139, 156, 173, 0.9);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .step {
   display: flex;
   gap: 0.4rem;
@@ -283,6 +303,14 @@
   .card {
     padding: 1.35rem 1.15rem 1.5rem;
     border-radius: 20px;
+  }
+
+  .logo {
+    width: 68px;
+  }
+
+  .brandCaption {
+    font-size: 0.68rem;
   }
 
   .title {

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 import styles from './page.module.css';
 
@@ -70,6 +71,10 @@ export default function PollPage() {
     <main className={styles.main}>
       <div className={styles.card}>
         <div className={styles.header}>
+          <div className={styles.brandRow}>
+            <Image src="/logo.png" alt="Логотип" width={248} height={122} className={styles.logo} priority />
+            <p className={styles.brandCaption}>опросы</p>
+          </div>
           <div className={styles.step}>
             <span className={step === 'role' ? styles.stepActive : styles.stepDot} />
             <span className={step === 'question' ? styles.stepActive : styles.stepDot} />
@@ -108,7 +113,7 @@ export default function PollPage() {
         {step === 'question' && role && (
           <form onSubmit={handleSubmit} className={styles.form}>
             <p className={styles.label}>
-              Укажите от 10% до 100% — ползунком или числом (например, 55 или 64).
+              Укажите от 10% до 100% — ползунком или числом.
             </p>
             <div className={styles.rangeRow}>
               <input

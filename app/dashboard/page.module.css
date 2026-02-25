@@ -27,17 +27,20 @@
   gap: 0.5rem;
 }
 
-.kicker {
-  margin: 0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  color: #8cefd0;
-  text-transform: uppercase;
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.logo {
+  width: 86px;
+  height: auto;
+  flex-shrink: 0;
 }
 
 .question {
-  font-size: clamp(1.3rem, 2.2vw, 1.9rem);
+  font-size: clamp(1.15rem, 2vw, 1.75rem);
   font-weight: 800;
   margin: 0;
   color: var(--text);
@@ -95,6 +98,30 @@
   align-items: center;
   gap: 0.55rem;
   flex-shrink: 0;
+}
+
+.streamPill {
+  border-radius: 11px;
+  border: 1px solid rgba(28, 201, 152, 0.32);
+  background: linear-gradient(180deg, rgba(18, 34, 31, 0.9), rgba(12, 26, 23, 0.92));
+  padding: 0.38rem 0.65rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+
+.streamLabel {
+  color: #99b4af;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.streamValue {
+  color: #e7fff5;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .refreshBtn {
@@ -219,12 +246,17 @@
   flex: 1;
   min-width: 0;
   height: 100%;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 0fr 0fr;
   align-items: flex-end;
-  justify-content: space-around;
   gap: 0.8rem;
   padding: 1.7rem 0.5rem 0.35rem;
   position: relative;
+  transition: grid-template-columns 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.barsArea[data-show-test='true'] {
+  grid-template-columns: minmax(140px, 1fr) auto minmax(140px, 1fr);
 }
 
 .barGroup {
@@ -256,6 +288,16 @@
   border-radius: 14px 14px 7px 7px;
   position: relative;
   transition: height 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: hidden;
+}
+
+.barFillPoll::after,
+.barFillTest::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 45%);
+  pointer-events: none;
 }
 
 .barFillPoll {
@@ -264,8 +306,8 @@
 }
 
 .barFillTest {
-  background: linear-gradient(180deg, #7be8cb 0%, #38d1a6 100%);
-  box-shadow: 0 6px 24px rgba(86, 234, 189, 0.28);
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow: 0 6px 24px rgba(59, 130, 246, 0.3);
 }
 
 .barValue {
@@ -294,8 +336,8 @@
 }
 
 .barValue[data-variant='test'] {
-  background: rgba(56, 209, 166, 0.9);
-  box-shadow: 0 3px 12px rgba(56, 209, 166, 0.45);
+  background: rgba(59, 130, 246, 0.95);
+  box-shadow: 0 3px 12px rgba(59, 130, 246, 0.45);
 }
 
 .barValuePulse {
@@ -325,6 +367,7 @@
   justify-content: center;
   align-self: stretch;
   min-width: 110px;
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
 .deltaLabel {
@@ -355,6 +398,30 @@
   animation: deltaPulse 0.35s ease-out;
 }
 
+.deltaVisible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.deltaHidden {
+  opacity: 0;
+  transform: translateX(10px);
+  pointer-events: none;
+}
+
+.testVisible {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.testHidden {
+  opacity: 0;
+  transform: translateX(14px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
 @keyframes deltaPulse {
   0% {
     transform: scale(1.08);
@@ -383,12 +450,24 @@
     align-items: stretch;
   }
 
+  .brandRow {
+    gap: 0.6rem;
+  }
+
+  .logo {
+    width: 70px;
+  }
+
   .sidePanel {
     align-items: stretch;
   }
 
   .metricRow {
     justify-content: flex-start;
+  }
+
+  .toggleWrap {
+    flex-wrap: wrap;
   }
 
   .sections {
