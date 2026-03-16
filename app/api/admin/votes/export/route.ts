@@ -24,26 +24,26 @@ export async function GET() {
     });
 
     const findSessionForVote = (voteId: number | undefined) => {
-      if (!voteId) return { label: '', started_at: '' };
-      let found: { label: string; started_at: string } | null = null;
+      if (!voteId) return { label: '', date_created: '' };
+      let found: { label: string; date_created: string } | null = null;
       for (const s of sortedSessions) {
         const sid = s.start_from_id ?? 0;
         if (sid <= voteId) {
           found = {
             label: s.label,
-            started_at: s.started_at ?? '',
+            date_created: s.date_created ?? '',
           };
         } else {
           break;
         }
       }
-      return found ?? { label: '', started_at: '' };
+      return found ?? { label: '', date_created: '' };
     };
 
     const header = ['id', 'role', 'value', 'session_label', 'session_started_at'];
     const rows = votes.map((v) => {
       const session = findSessionForVote(v.id);
-      return [v.id ?? '', v.role, v.value, session.label, session.started_at];
+      return [v.id ?? '', v.role, v.value, session.label, session.date_created];
     });
 
     const csvWithoutBom = [
