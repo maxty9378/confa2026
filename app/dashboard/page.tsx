@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Image from 'next/image';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -207,6 +207,7 @@ function ChartSection({
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [activeSession, setActiveSession] = useState<string | null>(null);
   const [courseTestGdf, setCourseTestGdf] = useState<number | null>(null);
   const [courseTestSv, setCourseTestSv] = useState<number | null>(null);
   const [showTests, setShowTests] = useState(false);
@@ -327,10 +328,12 @@ export default function DashboardPage() {
       .then((data) => {
         setCourseTestGdf(data.course_test_percent_gdf ?? null);
         setCourseTestSv(data.course_test_percent_sv ?? null);
+        setActiveSession(data.active_session ?? null);
       })
       .catch(() => {
         setCourseTestGdf(null);
         setCourseTestSv(null);
+        setActiveSession(null);
       });
   };
 
@@ -354,7 +357,14 @@ export default function DashboardPage() {
         <div className={styles.titleWrap}>
           <div className={styles.brandRow}>
             <Image src="/logo.png" alt="Логотип" width={248} height={122} className={styles.logo} priority />
-            <h1 className={styles.question}>Насколько вы владеете стандартами СПП?</h1>
+            <div className={styles.titleContent}>
+              <h1 className={styles.question}>Насколько вы владеете стандартами СПП?</h1>
+              {activeSession && (
+                <div className={styles.sessionBadge}>
+                  Сессия: <strong>{activeSession}</strong>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

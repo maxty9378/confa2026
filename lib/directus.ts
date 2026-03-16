@@ -72,10 +72,10 @@ export async function createVote(role: string, value: number): Promise<DirectusV
   }
 }
 
-export async function getVotes(): Promise<{ role: string; value: number }[]> {
+export async function getVotes(): Promise<DirectusVote[]> {
   try {
     const res = await fetchWithRetry(
-      `${DIRECTUS_URL}/items/${COLLECTION}?fields=role,value&limit=-1`,
+      `${DIRECTUS_URL}/items/${COLLECTION}?fields=id,role,value&limit=-1`,
       { headers: headers() }
     );
     if (!res.ok) {
@@ -84,7 +84,7 @@ export async function getVotes(): Promise<{ role: string; value: number }[]> {
     }
     const data = await res.json();
     const list = data?.data ?? data;
-    return Array.isArray(list) ? list : [];
+    return Array.isArray(list) ? (list as DirectusVote[]) : [];
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg === 'CONNECT_TIMEOUT') throw new Error('CONNECT_TIMEOUT');
@@ -123,6 +123,102 @@ export async function deleteAllVotes(): Promise<void> {
   }
 }
 
+export async function getVotesForExport(): Promise<DirectusVote[]> {
+  try {
+    const res = await fetchWithRetry(
+      `${DIRECTUS_URL}/items/${COLLECTION}?fields=id,role,value&limit=-1`,
+      { headers: headers() }
+    );
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Directus: ${res.status} ${err}`);
+    }
+    const data = await res.json();
+    const list = data?.data ?? data;
+    return Array.isArray(list) ? (list as DirectusVote[]) : [];
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === 'CONNECT_TIMEOUT') throw new Error('CONNECT_TIMEOUT');
+    throw e;
+  }
+}
+
+// --- Сессии опроса (опционально, отдельная коллекция в Directus) ---
+
+const SESSIONS_COLLECTION = 'confa_sessions';
+
+export interface ConfaSession {
+  id?: number;
+  label: string;
+  date_created?: string;
+  start_from_id: number | null;
+}
+
+export async function createSessionRecord(payload: {
+  label: string;
+  start_from_id: number | null;
+}): Promise<ConfaSession | null> {
+  try {
+    const res = await fetchWithRetry(`${DIRECTUS_URL}/items/${SESSIONS_COLLECTION}`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({
+        label: payload.label,
+        start_from_id: payload.start_from_id,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.warn(`Directus createSessionRecord error: ${res.status} ${err}`);
+      return null;
+    }
+    const data = (await res.json()) as { data?: ConfaSession };
+    return data?.data ?? null;
+  } catch (e) {
+    console.error('Failed to create session record:', e);
+    return null;
+  }
+}
+
+export async function getSessions(): Promise<ConfaSession[]> {
+  try {
+    const res = await fetchWithRetry(
+      `${DIRECTUS_URL}/items/${SESSIONS_COLLECTION}?fields=id,label,date_created,start_from_id&sort[]=-id&limit=50`,
+      { headers: headers() }
+    );
+    if (!res.ok) {
+      const err = await res.text();
+      console.warn(`Directus getSessions error: ${res.status} ${err}`);
+      return [];
+    }
+    const data = await res.json();
+    const list = data?.data ?? data;
+    return Array.isArray(list) ? (list as ConfaSession[]) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export async function getLatestSession(): Promise<ConfaSession | null> {
+  try {
+    const res = await fetchWithRetry(
+      `${DIRECTUS_URL}/items/${SESSIONS_COLLECTION}?fields=id,label,date_created,start_from_id&sort[]=-id&limit=1`,
+      { headers: headers() }
+    );
+    if (!res.ok) {
+      const err = await res.text();
+      console.warn(`Directus getLatestSession error: ${res.status} ${err}`);
+      return null;
+    }
+    const data = await res.json();
+    const list = data?.data ?? data;
+    const row = Array.isArray(list) ? list[0] : list;
+    return row || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 // Настройки конференции (результаты тестирования по ГДф и СВ) — одна запись в confa_settings
 const SETTINGS_COLLECTION = 'confa_settings';
 
@@ -133,7 +229,8 @@ export interface ConfaSettings {
   course_test_percent_sv: number | null;
 }
 
-const SETTINGS_FIELDS = 'id,course_test_percent,course_test_percent_gdf,course_test_percent_sv';
+const SETTINGS_FIELDS =
+  'id,course_test_percent,course_test_percent_gdf,course_test_percent_sv';
 
 export async function getSettings(): Promise<ConfaSettings> {
   try {
@@ -149,7 +246,10 @@ export async function getSettings(): Promise<ConfaSettings> {
     const list = data?.data ?? data;
     const row = Array.isArray(list) ? list[0] : list;
     if (!row)
-      return { course_test_percent_gdf: null, course_test_percent_sv: null };
+      return {
+        course_test_percent_gdf: null,
+        course_test_percent_sv: null,
+      };
     return {
       id: row.id,
       course_test_percent: row.course_test_percent ?? null,
@@ -216,6 +316,94 @@ export async function updateSettings(payload: {
       course_test_percent_sv: body.course_test_percent_sv ?? null,
     };
     return created?.data ?? result;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === 'CONNECT_TIMEOUT') throw new Error('CONNECT_TIMEOUT');
+    throw e;
+  }
+}
+
+// --- Настройки по округам ---
+
+const DISTRICTS_COLLECTION = 'confa_districts';
+
+export interface ConfaDistrict {
+  id: string; // label: СЗФО, ЮФО и т.д.
+  course_test_percent_gdf: number | null;
+  course_test_percent_sv: number | null;
+}
+
+export async function getDistricts(): Promise<ConfaDistrict[]> {
+  try {
+    const res = await fetchWithRetry(
+      `${DIRECTUS_URL}/items/${DISTRICTS_COLLECTION}?fields=id,course_test_percent_gdf,course_test_percent_sv&limit=-1`,
+      { headers: headers() }
+    );
+    if (!res.ok) {
+      const err = await res.text();
+      console.warn(`Directus getDistricts error: ${res.status} ${err}`);
+      return [];
+    }
+    const data = await res.json();
+    const list = data?.data ?? data;
+    return Array.isArray(list) ? (list as ConfaDistrict[]) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export async function updateDistrict(id: string, payload: {
+  course_test_percent_gdf?: number | null;
+  course_test_percent_sv?: number | null;
+}): Promise<void> {
+  const body: Record<string, number | null> = {};
+  if (payload.course_test_percent_gdf !== undefined)
+    body.course_test_percent_gdf = clamp(payload.course_test_percent_gdf);
+  if (payload.course_test_percent_sv !== undefined)
+    body.course_test_percent_sv = clamp(payload.course_test_percent_sv);
+
+  try {
+    const res = await fetchWithRetry(`${DIRECTUS_URL}/items/${DISTRICTS_COLLECTION}/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: headers(),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      // Если записи нет, пробуем создать
+      if (res.status === 404) {
+        const createRes = await fetchWithRetry(`${DIRECTUS_URL}/items/${DISTRICTS_COLLECTION}`, {
+          method: 'POST',
+          headers: headers(),
+          body: JSON.stringify({ id, ...body }),
+        });
+        if (!createRes.ok) {
+          const err = await createRes.text();
+          console.warn(`Directus createDistrict error: ${createRes.status} ${err}`);
+        }
+        return;
+      }
+      const err = await res.text();
+      console.warn(`Directus updateDistrict error: ${res.status} ${err}`);
+    }
+  } catch (e) {
+    console.error('Failed to update district:', e);
+  }
+}
+
+export async function getLastVoteId(): Promise<number | null> {
+  try {
+    const res = await fetchWithRetry(
+      `${DIRECTUS_URL}/items/${COLLECTION}?fields=id&sort[]=-id&limit=1`,
+      { headers: headers() }
+    );
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Directus: ${res.status} ${err}`);
+    }
+    const data = await res.json();
+    const list = data?.data ?? data;
+    const row = Array.isArray(list) ? list[0] : list;
+    return row?.id ?? null;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg === 'CONNECT_TIMEOUT') throw new Error('CONNECT_TIMEOUT');

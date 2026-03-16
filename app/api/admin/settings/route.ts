@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getSettings, updateSettings } from '@/lib/directus';
+import { getActiveSessionLabel } from '@/lib/store';
 
 export async function GET() {
   try {
-    const settings = await getSettings();
-    return NextResponse.json(settings);
+    const [settings, activeSession] = await Promise.all([
+      getSettings(),
+      getActiveSessionLabel(),
+    ]);
+    return NextResponse.json({ ...settings, active_session: activeSession });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: 'Ошибка загрузки' }, { status: 500 });

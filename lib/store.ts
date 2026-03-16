@@ -1,4 +1,4 @@
-import { createVote, getVotes } from '@/lib/directus';
+import { createVote, getVotes, getLastVoteId, createSessionRecord } from '@/lib/directus';
 import type { Role } from '@/lib/store-types';
 
 export type { Role } from './store-types';
@@ -9,10 +9,52 @@ import { computeStats } from './store-utils';
 
 const subscribers: Array<(stats: Stats) => void> = [];
 let cachedStats: Stats | null = null;
+let sessionStartFromId: number | null = null;
+let sessionLabel: string | null = null;
+let isInitialized = false;
+
+async function ensureInitialized() {
+  if (isInitialized) return;
+  try {
+    const { getLatestSession } = await import('@/lib/directus');
+    const latest = await getLatestSession();
+    if (latest) {
+      sessionStartFromId = latest.start_from_id;
+      sessionLabel = latest.label;
+      console.log(`Loaded active session from DB: ${sessionLabel} (from ID ${sessionStartFromId})`);
+    } else {
+      console.log('No active session found in DB, starting from scratch.');
+    }
+  } catch (e) {
+    console.error('Failed to initialize session from DB:', e);
+  }
+  isInitialized = true;
+}
+
+export async function getActiveSessionLabel() {
+  await ensureInitialized();
+  return sessionLabel;
+}
 
 function notify(stats: Stats) {
   cachedStats = stats;
   subscribers.forEach((cb) => cb(stats));
+}
+
+function mapVotesForStats(
+  votes: { id?: number; role: string; value: number }[],
+  minId: number | null
+) {
+  const threshold = minId ?? null;
+  const filtered =
+    threshold == null ? votes : votes.filter((v) => (v.id ?? 0) > threshold);
+  return filtered.map((v) => ({ role: v.role, value: v.value }));
+}
+
+async function getVotesForCurrentSession() {
+  await ensureInitialized();
+  const votes = await getVotes();
+  return mapVotesForStats(votes, sessionStartFromId);
 }
 
 function applyVoteToStats(stats: Stats, role: Role, value: number): Stats {
@@ -54,7 +96,7 @@ export async function addVote(role: Role, value: number): Promise<Stats> {
     notify(optimistic);
 
     // Background reconciliation with source of truth.
-    void getVotes()
+    void getVotesForCurrentSession()
       .then((votes) => {
         const fresh = computeStats(votes);
         const changed =
@@ -73,14 +115,14 @@ export async function addVote(role: Role, value: number): Promise<Stats> {
     return optimistic;
   }
 
-  const votes = await getVotes();
+  const votes = await getVotesForCurrentSession();
   const fresh = computeStats(votes);
   notify(fresh);
   return fresh;
 }
 
 export async function getStatsSnapshot(): Promise<Stats> {
-  const votes = await getVotes();
+  const votes = await getVotesForCurrentSession();
   const stats = computeStats(votes);
   cachedStats = stats;
   return stats;
@@ -88,7 +130,22 @@ export async function getStatsSnapshot(): Promise<Stats> {
 
 /** Обновить статистику из БД и уведомить подписчиков (дашборд). */
 export async function refreshAndNotify(): Promise<Stats> {
-  const votes = await getVotes();
+  const votes = await getVotesForCurrentSession();
+  const stats = computeStats(votes);
+  notify(stats);
+  return stats;
+}
+
+export async function startNewSession(label: string): Promise<Stats> {
+  const lastId = await getLastVoteId();
+  sessionStartFromId = lastId;
+  sessionLabel = label;
+  isInitialized = true; // Фиксируем, что сессия установлена вручную
+
+  // Пытаемся сохранить сессию в Directus
+  void createSessionRecord({ label, start_from_id: lastId }).catch(() => {});
+
+  const votes = await getVotesForCurrentSession();
   const stats = computeStats(votes);
   notify(stats);
   return stats;
