@@ -137,22 +137,30 @@ export default function AdminPage() {
   const handleSaveDistricts = async () => {
     setSavingDistricts(true);
     try {
-      for (const id of SESSION_OPTIONS) {
-        const d = districts[id];
-        const gdfRaw = d.gdf.trim().replace(',', '.');
-        const svRaw = d.sv.trim().replace(',', '.');
-        const gdf = gdfRaw === '' ? null : parseFloat(gdfRaw);
-        const sv = svRaw === '' ? null : parseFloat(svRaw);
-        
-        await fetch('/api/admin/districts', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, gdf, sv }),
-        });
+      const results = await Promise.all(
+        SESSION_OPTIONS.map(async (id) => {
+          const d = districts[id];
+          const gdfRaw = d.gdf.trim().replace(',', '.');
+          const svRaw = d.sv.trim().replace(',', '.');
+          const gdf = gdfRaw === '' ? null : parseFloat(gdfRaw);
+          const sv = svRaw === '' ? null : parseFloat(svRaw);
+          
+          const res = await fetch('/api/admin/districts', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, gdf, sv }),
+          });
+          return res.ok;
+        })
+      );
+
+      if (results.every(r => r === true)) {
+        toast.success('Результаты по округам сохранены');
+      } else {
+        toast.error('Часть данных не удалось сохранить');
       }
-      toast.success('Результаты по округам сохранены');
     } catch {
-      toast.error('Ошибка при сохранении округов');
+      toast.error('Ошибка при соединении с сервером');
     }
     setSavingDistricts(false);
   };
