@@ -1,4 +1,4 @@
-import { createVote, getVotes, getLastVoteId, createSessionRecord } from '@/lib/directus';
+import { createVote, getVotes, deleteVote as deleteVoteDirectus, getLastVoteId, createSessionRecord } from '@/lib/directus';
 import type { Role } from '@/lib/store-types';
 
 export type { Role } from './store-types';
@@ -115,6 +115,14 @@ export async function addVote(role: Role, value: number): Promise<Stats> {
     return optimistic;
   }
 
+  const votes = await getVotesForCurrentSession();
+  const fresh = computeStats(votes);
+  notify(fresh);
+  return fresh;
+}
+
+export async function deleteVote(id: number): Promise<Stats> {
+  await deleteVoteDirectus(id);
   const votes = await getVotesForCurrentSession();
   const fresh = computeStats(votes);
   notify(fresh);

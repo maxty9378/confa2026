@@ -399,3 +399,73 @@
   color: var(--muted);
   margin-bottom: 1.5rem;
 }
+
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.votesTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.votesTable th {
+  text-align: left;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+
+.votesTable td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  color: var(--text);
+}
+
+.voteId {
+  font-family: monospace;
+  color: var(--muted);
+}
+
+.voteValue {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.deleteBtn {
+  background: transparent;
+  color: #fca5a5;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  opacity: 1;
+}
+
+.deleteBtn:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
+.emptyTable {
+  text-align: center;
+  padding: 3rem !important;
+  color: var(--muted);
+  font-style: italic;
+}

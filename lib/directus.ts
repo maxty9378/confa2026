@@ -123,6 +123,24 @@ export async function deleteAllVotes(): Promise<void> {
   }
 }
 
+/** Удаляет одну запись по ID */
+export async function deleteVote(id: number): Promise<void> {
+  try {
+    const res = await fetchWithRetry(`${DIRECTUS_URL}/items/${COLLECTION}/${id}`, {
+      method: 'DELETE',
+      headers: headers(),
+    });
+    if (!res.ok && res.status !== 404) {
+      const err = await res.text();
+      throw new Error(`Directus: ${res.status} ${err}`);
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === 'CONNECT_TIMEOUT') throw new Error('CONNECT_TIMEOUT');
+    throw e;
+  }
+}
+
 export async function getVotesForExport(): Promise<DirectusVote[]> {
   try {
     const res = await fetchWithRetry(
