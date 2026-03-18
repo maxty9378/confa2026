@@ -16,7 +16,9 @@ interface Stats {
 const SESSION_OPTIONS = ['СЗФО', 'ЮФО', 'ДВФО', 'ПФО', 'ЦФО', 'СФО+УФО'] as const;
 
 function fmt(v: number | null): string {
-  return v != null ? `${v}%` : '—';
+  if (v == null) return '—';
+  // Если число целое, выводим как есть, если дробное - до 1 знака
+  return Number.isInteger(v) ? `${v}%` : `${v.toFixed(1)}%`;
 }
 
 // Простые иконки
@@ -99,10 +101,10 @@ export default function AdminPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const rawGdf = courseTestGdf.trim();
-    const rawSv = courseTestSv.trim();
-    const valueGdf = rawGdf === '' ? null : parseInt(rawGdf, 10);
-    const valueSv = rawSv === '' ? null : parseInt(rawSv, 10);
+    const rawGdf = courseTestGdf.trim().replace(',', '.');
+    const rawSv = courseTestSv.trim().replace(',', '.');
+    const valueGdf = rawGdf === '' ? null : parseFloat(rawGdf);
+    const valueSv = rawSv === '' ? null : parseFloat(rawSv);
     
     if (valueGdf !== null && (Number.isNaN(valueGdf) || valueGdf < 0 || valueGdf > 100)) {
       toast.error('ГДф: введите число от 0 до 100');
@@ -137,8 +139,10 @@ export default function AdminPage() {
     try {
       for (const id of SESSION_OPTIONS) {
         const d = districts[id];
-        const gdf = d.gdf.trim() === '' ? null : parseInt(d.gdf, 10);
-        const sv = d.sv.trim() === '' ? null : parseInt(d.sv, 10);
+        const gdfRaw = d.gdf.trim().replace(',', '.');
+        const svRaw = d.sv.trim().replace(',', '.');
+        const gdf = gdfRaw === '' ? null : parseFloat(gdfRaw);
+        const sv = svRaw === '' ? null : parseFloat(svRaw);
         
         await fetch('/api/admin/districts', {
           method: 'PATCH',
@@ -323,10 +327,10 @@ export default function AdminPage() {
                 <div className={styles.inputGroup}>
                   <input
                     type="text"
-                    inputMode="numeric"
+                    inputMode="decimal"
                     className={styles.input}
                     value={courseTestGdf}
-                    onChange={(e) => setCourseTestGdf(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                    onChange={(e) => setCourseTestGdf(e.target.value.replace(/[^0-9.,]/g, '').slice(0, 5))}
                     placeholder="0–100"
                   />
                   <span className={styles.percent}>%</span>
@@ -337,10 +341,10 @@ export default function AdminPage() {
                 <div className={styles.inputGroup}>
                   <input
                     type="text"
-                    inputMode="numeric"
+                    inputMode="decimal"
                     className={styles.input}
                     value={courseTestSv}
-                    onChange={(e) => setCourseTestSv(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                    onChange={(e) => setCourseTestSv(e.target.value.replace(/[^0-9.,]/g, '').slice(0, 5))}
                     placeholder="0–100"
                   />
                   <span className={styles.percent}>%</span>
@@ -378,12 +382,12 @@ export default function AdminPage() {
                   <td>
                     <input
                       type="text"
-                      inputMode="numeric"
+                      inputMode="decimal"
                       className={styles.tableInput}
                       value={districts[id].gdf}
                       onChange={(e) => setDistricts({
                         ...districts,
-                        [id]: { ...districts[id], gdf: e.target.value.replace(/\D/g, '').slice(0, 3) }
+                        [id]: { ...districts[id], gdf: e.target.value.replace(/[^0-9.,]/g, '').slice(0, 5) }
                       })}
                       placeholder="—"
                     />
@@ -391,12 +395,12 @@ export default function AdminPage() {
                   <td>
                     <input
                       type="text"
-                      inputMode="numeric"
+                      inputMode="decimal"
                       className={styles.tableInput}
                       value={districts[id].sv}
                       onChange={(e) => setDistricts({
                         ...districts,
-                        [id]: { ...districts[id], sv: e.target.value.replace(/\D/g, '').slice(0, 3) }
+                        [id]: { ...districts[id], sv: e.target.value.replace(/[^0-9.,]/g, '').slice(0, 5) }
                       })}
                       placeholder="—"
                     />

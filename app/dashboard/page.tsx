@@ -17,6 +17,10 @@ interface Stats {
 const SCALE = [100, 75, 50, 25, 0];
 const BAR_ANIM_MS = 320;
 
+function formatValue(v: number): string {
+  return Number.isInteger(Math.round(v * 10) / 10) ? Math.round(v).toString() : v.toFixed(1);
+}
+
 function ChartSection({
   title,
   pollValue,
@@ -172,7 +176,7 @@ function ChartSection({
           <div className={styles.barGroup}>
             <div className={styles.barWrapper}>
               <span className={`${styles.barValue} ${pulsePoll ? styles.barValuePulse : ''}`} data-variant="poll">
-                {Math.round(displayPollLabel)}%
+                {formatValue(displayPollLabel)}%
               </span>
               <div className={styles.barFillPoll} style={{ height: `${displayPoll}%` }} />
             </div>
@@ -184,16 +188,16 @@ function ChartSection({
           >
             <span className={styles.deltaLabel}>
               {pTest > pPoll
-                ? `LFL +${Math.round(displayDelta)}%`
+                ? `LFL +${formatValue(displayDelta)}%`
                 : pTest < pPoll
-                  ? `LFL -${Math.round(displayDelta)}%`
+                  ? `LFL -${formatValue(displayDelta)}%`
                   : 'Без изменений'}
             </span>
           </div>
           <div className={`${styles.barGroup} ${showTest ? styles.testVisible : styles.testHidden}`}>
             <div className={styles.barWrapper}>
               <span className={`${styles.barValue} ${pulseTest ? styles.barValuePulse : ''}`} data-variant="test">
-                {Math.round(displayTestLabel)}%
+                {formatValue(displayTestLabel)}%
               </span>
               <div className={styles.barFillTest} style={{ height: `${displayTest}%` }} />
             </div>

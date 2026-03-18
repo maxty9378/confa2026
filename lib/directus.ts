@@ -283,7 +283,7 @@ export async function getSettings(): Promise<ConfaSettings> {
 
 function clamp(n: number | null): number | null {
   if (n === null || n === undefined) return null;
-  const v = Math.round(Number(n));
+  const v = Number(n);
   return Number.isNaN(v) ? null : Math.max(0, Math.min(100, v));
 }
 
