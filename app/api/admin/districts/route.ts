@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getDistricts, updateDistrict } from '@/lib/directus';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const districts = await getDistricts();

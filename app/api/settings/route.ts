@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getSettings, getDistricts } from '@/lib/directus';
 import { getActiveSessionLabel } from '@/lib/store';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const [settings, districts, activeLabel] = await Promise.all([

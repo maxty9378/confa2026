@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getVotes } from '@/lib/directus';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const votes = await getVotes();
