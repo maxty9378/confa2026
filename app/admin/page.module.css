@@ -433,6 +433,17 @@
   color: var(--muted);
 }
 
+.voteSession {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.voteTime {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .voteValue {
   font-weight: 600;
   color: var(--accent);

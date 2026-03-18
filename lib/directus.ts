@@ -92,6 +92,32 @@ export async function getVotes(): Promise<DirectusVote[]> {
   }
 }
 
+export async function getVotesForAdmin(): Promise<DirectusVote[]> {
+  // Пытаемся получить date_created (для времени), но если нет прав — деградируем.
+  try {
+    const res = await fetchWithRetry(
+      `${DIRECTUS_URL}/items/${COLLECTION}?fields=id,role,value,date_created&limit=-1`,
+      { headers: headers() }
+    );
+    if (!res.ok) {
+      const err = await res.text();
+      // Частый кейс: нет прав на date_created — пробуем без него
+      if (/date_created/i.test(err) || res.status === 403) {
+        return await getVotes();
+      }
+      throw new Error(`Directus: ${res.status} ${err}`);
+    }
+    const data = await res.json();
+    const list = data?.data ?? data;
+    return Array.isArray(list) ? (list as DirectusVote[]) : [];
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === 'CONNECT_TIMEOUT') throw new Error('CONNECT_TIMEOUT');
+    // fallback
+    return await getVotes();
+  }
+}
+
 /** Удаляет все записи в коллекции votes (обнуление ответов на опрос). */
 export async function deleteAllVotes(): Promise<void> {
   try {
@@ -381,14 +407,15 @@ export async function updateDistrict(id: string, payload: {
     body.course_test_percent_sv = clamp(payload.course_test_percent_sv);
 
   try {
-    const res = await fetchWithRetry(`${DIRECTUS_URL}/items/${DISTRICTS_COLLECTION}/${encodeURIComponent(id)}`, {
+    const url = `${DIRECTUS_URL}/items/${DISTRICTS_COLLECTION}/${encodeURIComponent(id)}`;
+    const res = await fetchWithRetry(url, {
       method: 'PATCH',
       headers: headers(),
       body: JSON.stringify(body),
     });
     if (!res.ok) {
-      // Если записи нет, пробуем создать
       if (res.status === 404) {
+        console.log(`District ${id} not found, creating...`);
         const createRes = await fetchWithRetry(`${DIRECTUS_URL}/items/${DISTRICTS_COLLECTION}`, {
           method: 'POST',
           headers: headers(),
@@ -396,12 +423,12 @@ export async function updateDistrict(id: string, payload: {
         });
         if (!createRes.ok) {
           const err = await createRes.text();
-          console.warn(`Directus createDistrict error: ${createRes.status} ${err}`);
+          console.error(`Directus createDistrict error: ${createRes.status} ${err}`);
         }
         return;
       }
       const err = await res.text();
-      console.warn(`Directus updateDistrict error: ${res.status} ${err}`);
+      console.error(`Directus updateDistrict error: ${res.status} ${err} (URL: ${url})`);
     }
   } catch (e) {
     console.error('Failed to update district:', e);

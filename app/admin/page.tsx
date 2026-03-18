@@ -49,7 +49,14 @@ export default function AdminPage() {
   const [districts, setDistricts] = useState<Record<string, { gdf: string; sv: string }>>(
     SESSION_OPTIONS.reduce((acc, opt) => ({ ...acc, [opt]: { gdf: '', sv: '' } }), {})
   );
-  const [recentVotes, setRecentVotes] = useState<{ id: number; role: string; value: number }[]>([]);
+  const [recentVotes, setRecentVotes] = useState<{
+    id: number;
+    role: string;
+    value: number;
+    date_created: string | null;
+    session_label: string;
+    session_started_at: string | null;
+  }[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -97,6 +104,19 @@ export default function AdminPage() {
       .catch(() => toast.error('Ошибка загрузки данных'))
       .finally(() => setLoading(false));
   }, []);
+
+  const formatDateTime = (iso: string | null) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleString('ru-RU', {
+      year: '2-digit',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -441,6 +461,8 @@ export default function AdminPage() {
               <thead>
                 <tr>
                   <th>ID</th>
+                  <th>Сессия</th>
+                  <th>Время</th>
                   <th>Роль</th>
                   <th>Значение</th>
                   <th style={{ width: '80px' }}></th>
@@ -449,12 +471,16 @@ export default function AdminPage() {
               <tbody>
                 {recentVotes.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className={styles.emptyTable}>Нет данных</td>
+                    <td colSpan={6} className={styles.emptyTable}>Нет данных</td>
                   </tr>
                 ) : (
                   recentVotes.map((v) => (
                     <tr key={v.id}>
                       <td className={styles.voteId}>#{v.id}</td>
+                      <td className={styles.voteSession}>
+                        {v.session_label ? v.session_label : '—'}
+                      </td>
+                      <td className={styles.voteTime}>{formatDateTime(v.date_created)}</td>
                       <td>{v.role}</td>
                       <td className={styles.voteValue}>{v.value}%</td>
                       <td>
