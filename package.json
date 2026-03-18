@@ -13,6 +13,7 @@
     "setup:directus:settings:fields": "node scripts/add-settings-fields-gdf-sv.mjs"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
     "next": "^15.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -63,6 +63,7 @@ export default function AdminPage() {
   const [savingDistricts, setSavingDistricts] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportingRecent, setExportingRecent] = useState(false);
   const [deletingVote, setDeletingVote] = useState<number | null>(null);
 
   useEffect(() => {
@@ -110,6 +111,7 @@ export default function AdminPage() {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return '—';
     return d.toLocaleString('ru-RU', {
+      timeZone: 'Europe/Moscow',
       year: '2-digit',
       month: '2-digit',
       day: '2-digit',
@@ -242,6 +244,27 @@ export default function AdminPage() {
       toast.error('Ошибка экспорта');
     }
     setExporting(false);
+  };
+
+  const handleExportRecentVotesXlsx = async () => {
+    setExportingRecent(true);
+    try {
+      const res = await fetch('/api/admin/votes/recent/export');
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `votes-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success('Excel выгрузка готова');
+    } catch {
+      toast.error('Ошибка экспорта Excel');
+    }
+    setExportingRecent(false);
   };
 
   if (loading) {
@@ -456,6 +479,18 @@ export default function AdminPage() {
           <p className={styles.hint}>
             Здесь отображаются последние 50 ответов. Вы можете удалить любой из них.
           </p>
+          <div className={styles.actionsRow} style={{ marginBottom: '1rem' }}>
+            <button
+              type="button"
+              className={`${styles.exportBtn} ${styles.compactBtn}`}
+              onClick={handleExportRecentVotesXlsx}
+              disabled={exportingRecent || recentVotes.length === 0}
+              title="Экспортировать все ответы в Excel"
+            >
+              <IconDownload />
+              {exportingRecent ? 'Экспорт...' : 'Excel'}
+            </button>
+          </div>
           <div className={styles.tableWrapper}>
             <table className={styles.votesTable}>
               <thead>
@@ -480,7 +515,13 @@ export default function AdminPage() {
                       <td className={styles.voteSession}>
                         {v.session_label ? v.session_label : '—'}
                       </td>
-                      <td className={styles.voteTime}>{formatDateTime(v.date_created)}</td>
+                      <td className={styles.voteTime}>
+                        {v.date_created
+                          ? formatDateTime(v.date_created)
+                          : v.session_started_at
+                            ? `${formatDateTime(v.session_started_at)} (старт сессии)`
+                            : '—'}
+                      </td>
                       <td>{v.role}</td>
                       <td className={styles.voteValue}>{v.value}%</td>
                       <td>
