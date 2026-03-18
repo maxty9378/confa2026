@@ -28,7 +28,7 @@ export async function GET() {
       let found: { label: string; date_created: string } | null = null;
       for (const s of sortedSessions) {
         const sid = s.start_from_id ?? 0;
-        if (sid <= voteId) {
+        if (sid < voteId) {
           found = {
             label: s.label,
             date_created: s.date_created ?? '',
