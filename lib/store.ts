@@ -1,4 +1,4 @@
-import { createVote, getVotes, deleteVote as deleteVoteDirectus, getLastVoteId, createSessionRecord } from '@/lib/directus';
+import { createVote, getVotes, deleteVote as deleteVoteDirectus, getLastVoteId, createSessionRecord, getLatestSession } from '@/lib/directus';
 import type { Role } from '@/lib/store-types';
 
 export type { Role } from './store-types';
@@ -9,31 +9,10 @@ import { computeStats } from './store-utils';
 
 const subscribers: Array<(stats: Stats) => void> = [];
 let cachedStats: Stats | null = null;
-let sessionStartFromId: number | null = null;
-let sessionLabel: string | null = null;
-let isInitialized = false;
-
-async function ensureInitialized() {
-  if (isInitialized) return;
-  try {
-    const { getLatestSession } = await import('@/lib/directus');
-    const latest = await getLatestSession();
-    if (latest) {
-      sessionStartFromId = latest.start_from_id;
-      sessionLabel = latest.label;
-      console.log(`Loaded active session from DB: ${sessionLabel} (from ID ${sessionStartFromId})`);
-    } else {
-      console.log('No active session found in DB, starting from scratch.');
-    }
-  } catch (e) {
-    console.error('Failed to initialize session from DB:', e);
-  }
-  isInitialized = true;
-}
 
 export async function getActiveSessionLabel() {
-  await ensureInitialized();
-  return sessionLabel;
+  const latest = await getLatestSession();
+  return latest ? latest.label : null;
 }
 
 function notify(stats: Stats) {
@@ -52,7 +31,8 @@ function mapVotesForStats(
 }
 
 async function getVotesForCurrentSession() {
-  await ensureInitialized();
+  const latest = await getLatestSession();
+  const sessionStartFromId = latest ? latest.start_from_id : null;
   const votes = await getVotes();
   return mapVotesForStats(votes, sessionStartFromId);
 }
@@ -146,12 +126,9 @@ export async function refreshAndNotify(): Promise<Stats> {
 
 export async function startNewSession(label: string): Promise<Stats> {
   const lastId = await getLastVoteId();
-  sessionStartFromId = lastId;
-  sessionLabel = label;
-  isInitialized = true; // Фиксируем, что сессия установлена вручную
 
-  // Пытаемся сохранить сессию в Directus
-  void createSessionRecord({ label, start_from_id: lastId }).catch(() => {});
+  // Сохраняем сессию в Directus
+  await createSessionRecord({ label, start_from_id: lastId }).catch(() => {});
 
   const votes = await getVotesForCurrentSession();
   const stats = computeStats(votes);
